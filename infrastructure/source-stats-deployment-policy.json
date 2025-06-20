@@ -1,0 +1,106 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "LambdaManagement",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:UpdateFunctionCode",
+                "lambda:UpdateFunctionConfiguration",
+                "lambda:GetFunction",
+                "lambda:InvokeFunction",
+                "lambda:ListFunctions"
+            ],
+            "Resource": "arn:aws:lambda:us-west-2:*:function:source-stats"
+        },
+        {
+            "Sid": "S3ResultsWrite",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::us-west-2.opendata.source.coop/source/source-stats/*"
+            ]
+        },
+        {
+            "Sid": "S3ResultsList",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::us-west-2.opendata.source.coop"
+            ],
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": [
+                        "source/source-stats/*"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "AthenaQueryAccess",
+            "Effect": "Allow",
+            "Action": [
+                "athena:StartQueryExecution",
+                "athena:GetQueryExecution",
+                "athena:GetQueryResults",
+                "athena:StopQueryExecution",
+                "athena:GetWorkGroup",
+                "athena:GetDataCatalog",
+                "athena:GetDatabase",
+                "athena:GetTableMetadata",
+                "athena:ListQueryExecutions"
+            ],
+            "Resource": [
+                "arn:aws:athena:us-west-2:*:workgroup/primary",
+                "arn:aws:athena:us-west-2:*:datacatalog/*"
+            ]
+        },
+        {
+            "Sid": "GlueDataCatalogAccess",
+            "Effect": "Allow",
+            "Action": [
+                "glue:GetTable",
+                "glue:GetDatabase",
+                "glue:GetPartitions",
+                "glue:GetPartition"
+            ],
+            "Resource": [
+                "arn:aws:glue:us-west-2:*:catalog",
+                "arn:aws:glue:us-west-2:*:database/source_stats",
+                "arn:aws:glue:us-west-2:*:table/source_stats/*"
+            ]
+        },
+        {
+            "Sid": "CloudWatchLogsAccess",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams"
+            ],
+            "Resource": [
+                "arn:aws:logs:us-west-2:*:log-group:/aws/lambda/source-stats*"
+            ]
+        },
+        {
+            "Sid": "S3InventoryDataRead",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::YOUR-INVENTORY-BUCKET/*",
+                "arn:aws:s3:::YOUR-INVENTORY-BUCKET"
+            ]
+        }
+    ]
+} 
