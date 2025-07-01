@@ -12,17 +12,16 @@ def lambda_handler(event, context):
     athena = boto3.client('athena', region_name='us-west-2')
     s3 = boto3.client('s3', region_name='us-west-2')
     
-    # Current date for filename
-    now = datetime.now()
-    date_str = now.strftime('%Y%m%d')
-    
     # Configuration - Update these for your environment
     results_bucket = 'us-west-2.opendata.source.coop'
     results_prefix = 'source/source-stats/'
     database = 'source_stats'
     workgroup = 'primary'
     
-    print(f"Starting analysis for {date_str}")
+    # Use the most recent inventory date (June 29, 2025)
+    date_str = '250629'
+    
+    print(f"Starting analysis for inventory date {date_str}")
     
     # Define queries with proper headers and deduplication
     queries = {
@@ -125,8 +124,15 @@ def lambda_handler(event, context):
     
     def create_csv_with_header(analysis_type, query_info, date_str):
         """Create CSV file with proper header using simplified path structure"""
-        temp_location = f's3://{results_bucket}/{results_prefix}temp/{analysis_type}/{date_str}/'
-        final_location = f'{results_prefix}{analysis_type}/{date_str}.csv'
+        temp_location = f's3://source-inventories/temp/source-stats/{analysis_type}/{date_str}/'
+        
+        # Handle special naming for source summary file
+        if analysis_type == 'source':
+            filename = f'source-stats-summary-{date_str}.csv'
+        else:
+            filename = f'source-stats-{analysis_type}-{date_str}.csv'
+        
+        final_location = f'{results_prefix}{analysis_type}/{filename}'
         
         # Run query and output to temp location
         unload_query = f'''
@@ -146,7 +152,7 @@ def lambda_handler(event, context):
             QueryString=unload_query,
             QueryExecutionContext={'Database': database},
             ResultConfiguration={
-                'OutputLocation': f's3://{results_bucket}/{results_prefix}athena-temp/'
+                'OutputLocation': f's3://source-inventories/temp/athena/'
             },
             WorkGroup=workgroup
         )
@@ -157,8 +163,8 @@ def lambda_handler(event, context):
             return False
         
         # List files in temp location
-        temp_prefix = f"{results_prefix}temp/{analysis_type}/{date_str}/"
-        response = s3.list_objects_v2(Bucket=results_bucket, Prefix=temp_prefix)
+        temp_prefix = f"temp/source-stats/{analysis_type}/{date_str}/"
+        response = s3.list_objects_v2(Bucket='source-inventories', Prefix=temp_prefix)
         
         if 'Contents' not in response:
             print(f"No files found in temp location for {analysis_type}")
@@ -177,7 +183,7 @@ def lambda_handler(event, context):
         
         for file_key in data_files:
             # Get file content
-            obj_response = s3.get_object(Bucket=results_bucket, Key=file_key)
+            obj_response = s3.get_object(Bucket='source-inventories', Key=file_key)
             file_content = obj_response['Body'].read().decode('utf-8')
             csv_content += file_content
         
@@ -191,7 +197,7 @@ def lambda_handler(event, context):
         
         # Clean up temp files
         for file_key in data_files:
-            s3.delete_object(Bucket=results_bucket, Key=file_key)
+            s3.delete_object(Bucket='source-inventories', Key=file_key)
         
         print(f"✅ Created {final_location}")
         return True
@@ -199,31 +205,29 @@ def lambda_handler(event, context):
     def cleanup_directories():
         """Clean up temporary directories after processing"""
         try:
-            # Clean up athena-temp directory
-            athena_temp_prefix = f"{results_prefix}athena-temp/"
-            response = s3.list_objects_v2(Bucket=results_bucket, Prefix=athena_temp_prefix)
+            # Clean up athena temp directory in source-inventories bucket
+            response = s3.list_objects_v2(Bucket='source-inventories', Prefix='temp/athena/')
             
             if 'Contents' in response:
                 delete_objects = [{'Key': obj['Key']} for obj in response['Contents']]
                 if delete_objects:
                     s3.delete_objects(
-                        Bucket=results_bucket,
+                        Bucket='source-inventories',
                         Delete={'Objects': delete_objects}
                     )
-                    print(f"🧹 Cleaned up {len(delete_objects)} files from athena-temp/")
+                    print(f"🧹 Cleaned up {len(delete_objects)} files from source-inventories/temp/athena/")
             
-            # Clean up temp directory
-            temp_prefix = f"{results_prefix}temp/"
-            response = s3.list_objects_v2(Bucket=results_bucket, Prefix=temp_prefix)
+            # Clean up source-stats temp directory in source-inventories bucket
+            response = s3.list_objects_v2(Bucket='source-inventories', Prefix='temp/source-stats/')
             
             if 'Contents' in response:
                 delete_objects = [{'Key': obj['Key']} for obj in response['Contents']]
                 if delete_objects:
                     s3.delete_objects(
-                        Bucket=results_bucket,
+                        Bucket='source-inventories',
                         Delete={'Objects': delete_objects}
                     )
-                    print(f"🧹 Cleaned up {len(delete_objects)} files from temp/")
+                    print(f"🧹 Cleaned up {len(delete_objects)} files from source-inventories/temp/source-stats/")
                     
         except Exception as e:
             print(f"⚠️ Warning: Could not clean up temp directories: {str(e)}")
@@ -234,7 +238,12 @@ def lambda_handler(event, context):
     for analysis_type, query_info in queries.items():
         try:
             if create_csv_with_header(analysis_type, query_info, date_str):
-                results.append(f"{analysis_type}/{date_str}.csv")
+                # Use the same naming logic as in create_csv_with_header
+                if analysis_type == 'source':
+                    filename = f'source-stats-summary-{date_str}.csv'
+                else:
+                    filename = f'source-stats-{analysis_type}-{date_str}.csv'
+                results.append(f"{analysis_type}/{filename}")
                 print(f"✅ {analysis_type} completed successfully")
             else:
                 print(f"❌ {analysis_type} failed")
@@ -250,6 +259,6 @@ def lambda_handler(event, context):
             'message': 'Analysis completed - simplified structure',
             'date': date_str,
             'files': results,
-            'structure': 'source/source-stats/[type]/YYYYMMDD.csv'
+            'structure': 'source/source-stats/[type]/source-stats-[type]-YYMMDD.csv'
         })
     } 

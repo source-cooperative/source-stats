@@ -28,10 +28,10 @@
                 "s3:ListBucket"
             ],
             "Resource": [
-                "arn:aws:s3:::YOUR-RESULTS-BUCKET/*",
-                "arn:aws:s3:::YOUR-RESULTS-BUCKET",
-                "arn:aws:s3:::YOUR-INVENTORY-BUCKET/*",
-                "arn:aws:s3:::YOUR-INVENTORY-BUCKET"
+                "arn:aws:s3:::us-west-2.opendata.source.coop/*",
+                "arn:aws:s3:::us-west-2.opendata.source.coop",
+                "arn:aws:s3:::source-inventories/*",
+                "arn:aws:s3:::source-inventories"
             ]
         },
         {

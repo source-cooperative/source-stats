@@ -1,5 +1,8 @@
--- Create Athena table for S3 inventory data
--- Update the LOCATION with your S3 inventory path
+-- Update Athena table location for S3 inventory data
+-- Simple location update to use source-inventories bucket
+
+-- Drop and recreate with new location
+DROP TABLE IF EXISTS source_stats.inventory_data;
 
 CREATE EXTERNAL TABLE source_stats.inventory_data (
     bucket string,
@@ -9,11 +12,4 @@ CREATE EXTERNAL TABLE source_stats.inventory_data (
     checksum_algorithm string
 )
 STORED AS PARQUET
-LOCATION 's3://YOUR-BUCKET/path/to/inventory/data/'
-TBLPROPERTIES (
-    'projection.enabled' = 'true',
-    'projection.dt.type' = 'date',
-    'projection.dt.range' = '2024/01/01,NOW',
-    'projection.dt.format' = 'yyyy/MM/dd',
-    'storage.location.template' = 's3://YOUR-BUCKET/path/to/inventory/data/${dt}/'
-); 
+LOCATION 's3://source-inventories/us-west-2.opendata.source.coop/us-west-2.opendata.source.coop-inventory/data/'; 

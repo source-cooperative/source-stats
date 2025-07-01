@@ -56,9 +56,9 @@ See `infrastructure/source-stats-deployment-policy.json` for the complete policy
 ### File Structure
 ```
 s3://us-west-2.opendata.source.coop/source/source-stats/
-├── accounts/20250618.csv      # Account-level statistics
-├── repositories/20250618.csv  # Repository-level details
-└── source/20250618.csv        # Platform summary metrics
+├── accounts/source-stats-accounts-20250618.csv      # Account-level statistics
+├── repositories/source-stats-repositories-20250618.csv  # Repository-level details
+└── source/source-stats-summary-20250618.csv        # Platform summary metrics
 ```
 
 ### Sample Output
@@ -164,3 +164,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - 🐛 **Bug Reports**: [Create an issue](https://github.com/source-cooperative/source-stats/issues)
 - 💬 **Questions**: [Source Cooperative Slack](https://join.slack.com/t/sourcecoop/shared_invite/zt-212sakf1j-fONCD4lZ_v2HP2PDpTr2dw) 
+
+aws iam put-role-policy \
+     --role-name arn:aws:iam::417712557820:role/source-stats-lambda-role \
+     --policy-name SourceStatsLambdaPolicy \
+     --policy-document file://infrastructure/iam-policy.json \
+     --profile source-stats-deployer
